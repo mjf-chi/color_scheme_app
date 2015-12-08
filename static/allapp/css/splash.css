@@ -1,0 +1,30 @@
+.leftSide{
+    position:absolute;
+    width:50%;
+    left:0px;;
+    min-height:100% !important;
+    height:400px;
+    background-color:#000;
+}
+
+.rightSide{
+    position:absolute;
+    right:0px;
+    width:50%;
+    display:inline-block;
+    height: 100%;
+}
+
+#dreamsplash{
+    width:100%;
+    position:absolute;
+    top:50%;
+    transform:translateY(-50%);
+}
+
+#oceansplash{
+    width:100%;
+    position:absolute;
+    top:50%;
+    transform:translateY(-50%);
+}

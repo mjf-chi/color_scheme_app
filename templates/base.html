@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+{% load staticfiles %}
+
+<title>{% block title %}{% endblock %} DreamOcean Design</title>
+
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+<meta http-equiv="Pragma" content="no-cache" />
+<meta http-equiv="Expires" content="0" />
+
+</head>
+<link href="{% static 'allapp/css/webgl1.css' %}" rel='stylesheet'>
+
+</head>
+<body style='margin:0px' onload="init()" onresize="colorBlockSizing()">
+{% block content %}
+
+{% endblock %}
+
+<script src="{% static 'allapp/js/script.js' %}"></script>
+<script src="{% static 'allapp/js/J3DI.js' %}"></script>
+<script src="{% static 'allapp/js/J3DIMath.js' %}"></script>
+<script src="{% static 'allapp/js/webgl-utils.js' %}"></script>
+<script src="{% static 'allapp/js/libs.js' %}"></script>
+<script src="{% static 'allapp/js/jquery-1.11.3.min.js' %}"></script>
+
+{% block script %}
+
+{% endblock %}
+
+<script>
+    function init(){
+	try{
+	    webgl2();    
+	}
+	catch(err){
+
+	}
+    }
+</script>
+</body>
+</html>

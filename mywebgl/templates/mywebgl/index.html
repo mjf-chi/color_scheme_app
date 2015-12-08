@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+
+{% load staticfiles %}
+
+{% block title %}WebGL Research Lab{% endblock %}
+
+{% block content %}
+<canvas id='canvas' style='position:relative; background-color: black;'>
+
+</canvas>
+
+<div id="rightcolorline" style='position: absolute; right:0px; top:0px; height: 100%; width: 50px;'>
+
+</div>
+
+<div class='pageBlock'>
+    {% for i in all %}
+ 	<a href="{% url 'color-scheme' schemenum=i.pk %}" style='text-decoration:none;'>
+ 	<div class='colorSchemeBlock'>
+	{% for a in i.colors.all %}
+	    <div class='colorBlock' style='background-color:rgb({{ a.red }},{{ a.green }},{{ a.blue }});'>
+
+	    </div>
+	{% endfor %}	
+	</div>
+	</a>
+    {% endfor %}
+</div>
+
+<!--
+<div class='pageBlock' style='background-color:rgb(174,212,221);'>
+    <div id='colorFormHolder'>
+	<form action="/create_post/" method="POST" id='post-form'>
+	    <input type='submit' value='Submit'></input>
+	</form>
+    </div>
+</div>
+-->
+
+<div class='pageBlock' style='display:none; padding:40px 0px 40px 0px; width: 100%; max-width:100% !important; background-color:rgb(174,212,221);'>
+<p>
+{{ curvePs }}
+<p>
+</div>
+
+{% endblock %}
+
+{% block script %}
+    <script src="{% static 'allapp/js/main.js' %}"></script>
+    <script src="{% static 'allapp/js/ajaxing.js' %}"></script>
+    <script src="{% static 'allapp/js/pointcloud.js' %}"></script>
+    <script src="{% static 'allapp/js/colorblocks.js' %}"></script>
+
+    <script type="text/javascript">
+        var colorset = {{ colors|safe }};
+	var curveset = {{ curvePs|safe }};
+	var rgb = {{ rgb|safe }};
+
+	webgl2(colorset,rgb, curveset);
+	colorBlockSizing();
+    </script>
+
+{% endblock %}
