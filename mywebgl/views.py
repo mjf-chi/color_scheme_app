@@ -3,6 +3,8 @@ from django.template import RequestContext
 from django.core import serializers
 from django.http import HttpResponseRedirect
 from django.views.generic import View
+from numpy import matrix
+from numpy.linalg import svd
 
 import json
 from StringIO import StringIO
@@ -50,6 +52,7 @@ class ColorView(View):
 
 #	translated = self.translatePoints(curvePoints)
 #	scaled = self.scalePoints(translated)
+	self.updateComparisons()
 
         my_context = {}
         my_context['colors'] = json.dumps(to_json)    
@@ -107,15 +110,87 @@ class ColorView(View):
 
 	return curveVals
 
-    def findDerivs(self, points, increaseRate):
-	derivVals = []
-
-	return derivVals
-
     def updateComparisons(self):
-	a = 0
+	allcolorschemes = ColorScheme.objects.all()
+
+	for i in allcolorschemes:
+	    for j in ColorScheme.objects.all():
+		colorid = j.pk
+		try:
+		    compdata = i.comparisons.all()
+		    compexists = compdata.get(schemeid = colorid)
+		except:
+		    if i != j:
+		        compdif = self.findDifference(i, j)
+		        compname = ''
+		        compname = compname + i.name + '_' + j.name
+		        comparison = ComparisonData(name=compname, schemeid=colorid, difference=compdif)
+		        comparison.save()
+		        i.comparisons.add(comparison)
+		        i.save() 
+
+    def findDifference(self, colorschemeone, colorschemetwo):
+	dif = 0
+	hsvvalone = []
+	for i in colorschemeone.colors.all():
+	    hsvvalone.append(i.rgb_hsv())
+
+	hsvvaltwo = []
+	for j in colorschemetwo.colors.all():
+	    hsvvaltwo.append(j.rgb_hsv())
+
+	increaseRate = 0.020
+
+        to_json = []
+
+        for idx,i in enumerate(hsvvalone):
+	    pair = {}
+	    pair["hue"]=i[0]
+	    pair["saturation"]=i[1]
+	    pair["value"]=i[2]
 	
-	return a 
+	    to_json.append(pair)
+
+	sortedcolors = sorted(to_json, key=lambda x:x['hue'], reverse=False)
+	curvePointsone = self.calcCurve(sortedcolors, increaseRate)
+
+        to_json = []
+
+        for idx,i in enumerate(hsvvaltwo):
+	    pair = {}
+	    pair["hue"]=i[0]
+	    pair["saturation"]=i[1]
+	    pair["value"]=i[2]
+	
+	    to_json.append(pair)
+
+	sortedcolors = sorted(to_json, key=lambda x:x['hue'], reverse=False)
+	curvePointstwo = self.calcCurve(sortedcolors, increaseRate)
+
+	translatepointsone = self.translatePoints(curvePointsone)
+	translatepointstwo = self.translatePoints(curvePointstwo)
+	tspointsone = self.scalePoints(translatepointsone)
+	tspointstwo = self.scalePoints(translatepointstwo)
+	rmatrix = self.rotatePoints(tspointsone, tspointstwo)
+	
+	rotatedpointstwo = []
+	
+	for i in tspointstwo:
+	    newpoint = {}
+	    newpoint['x'] = (i['x'] * rmatrix[0,0])+(i['y'] * rmatrix[1,0])+(i['z'] * rmatrix[2,0])
+	    newpoint['y'] = (i['x'] * rmatrix[0,1])+(i['y'] * rmatrix[1,1])+(i['z'] * rmatrix[2, 1])
+	    newpoint['z'] = (i['x'] * rmatrix[0,2])+(i['y'] * rmatrix[1,2])+(i['z'] * rmatrix[2, 2])
+	    rotatedpointstwo.append(newpoint)
+ 
+	averagedif = 0
+
+	for idx, i in enumerate(tspointsone):
+	    distance = math.sqrt(math.pow((i['x']-rotatedpointstwo[idx]['x']),2)+(math.pow((i['y']-rotatedpointstwo[idx]['y']),2))+(math.pow((i['z']-rotatedpointstwo[idx]['z']),2)))
+	    averagedif = averagedif + distance
+
+	averagedif = averagedif/len(tspointsone)	    	
+
+	return averagedif
 
     def translatePoints(self, points):
 	newPoints = points
@@ -132,9 +207,8 @@ class ColorView(View):
 	totalx = totalx/(len(points))
 	totaly = totaly/(len(points))
 	totalz = totalz/(len(points))
-
 	
-	for i in newpoints:
+	for i in newPoints:
 	    i["x"] = i["x"]-totalx
 	    i["y"] = i["y"]-totaly
 	    i["z"] = i["z"]-totalz	
@@ -251,14 +325,13 @@ class ColorView(View):
 	hposeightval = hposeightval/(len(pointsetone))
 	hposnineval = hposnineval/(len(pointsetone))
 
-	H["xx"]=hposoneval
-    	H["xy"]=hpostwoval
-	H["xz"]=hposthreeval
-	H["yx"]=hposfourval
-	H['yy']=hposfiveval
-	H['yz']=hpossixval
-	H['zx']=hpossevenval
-	H['zy']=hposeightval
-	H['zz']=hposnineval
+	comatrixstring = ''
+	comatrixstring = comatrixstring + str(hposoneval) + " " + str(hpostwoval) + " " + str(hposthreeval) + " ; " + str(hposfourval) + " " + str(hposfiveval) + " " + str(hpossixval) + " ; " + str(hpossevenval) + " " + str(hposeightval) + " " + str(hposnineval) 
 
-	return H
+	comatrix = matrix(comatrixstring)
+
+	U, s, V = svd(comatrix)
+	Ut = U.T
+	R = V*Ut 
+
+	return R
